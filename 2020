@@ -55,9 +55,9 @@ unzip ~/2020_DailyImmigPort/${date}_DailyImmigPort.zip ${original} -d ~/2020_Dai
 ls ~/2020_DailyImmigPort/original-data/${original} &> /dev/null
 [ $? == 0 ] && rm ~/2020_DailyImmigPort/${date}_DailyImmigPort.zip
 
-cat ~/2020_DailyImmigPort/original-data/${original} | cut -d ',' -f 1,2,39 > ~/2020_DailyImmigPort/fix-data/${fix}
-#sed -i 's/日期,入出境總人數_小計,松山機場小計/Dt,Entry_and_Departure,TSA_Entry_and_Departure/g' ~/2020_DailyImmigPort/fix-data/${original}
-sed -i '/日期,入出境總人數_小計,松山機場小計/d' ~/2020_DailyImmigPort/fix-data/${fix}
+cat ~/2020_DailyImmigPort/original-data/${original} | cut -d ',' -f 1,2,5,8,39 > ~/2020_DailyImmigPort/fix-data/${fix}
+#sed -i 's/日期,入出境總人數_小計,桃園一期小計,桃園二期小計,松山機場小計/Dt,Total_E_and_D,TPE1_E_and_D,TPE2_E_and_D,TSA_E_and_D/g' ~/2020_DailyImmigPort/fix-data/${original}
+sed -i '/日期,入出境總人數_小計,桃園一期小計,桃園二期小計,松山機場小計/d' ~/2020_DailyImmigPort/fix-data/${fix}
 
 hdfs dfs -put ~/2020_DailyImmigPort/fix-data/${fix} hive-work/2020_DailyImmigPort/${fix}
 [ $? == 0 ] && echo -e " [${GREEN}●${NC}] ${fix} put success." || echo -e " [${RED}●${NC}] ${fix} put failed."
