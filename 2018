@@ -1,0 +1,66 @@
+#!/bin/bash
+#Purpose: down 2018 DailyImmigPort data.
+#Create-Date: 2023-06-02
+
+# Text color setting
+NC="\033[0m" # Color reset
+BLACK="\033[0;30m"
+RED="\033[0;31m"
+GREEN="\033[0;32m"
+YELLOW="\033[0;33m"
+BLUE="\033[0;34m"
+PURPLE="\033[0;35m"
+CYAN="\033[0;36m"
+WHITE="\033[0;37m"
+
+dataset_list="
+https://data.moi.gov.tw/MoiOD/System/DownloadFile.aspx?DATA=16598CA4-B527-4DCA-AE99-9E1572338F3F
+https://data.moi.gov.tw/MoiOD/System/DownloadFile.aspx?DATA=CCA938C8-4902-4CD6-9EFD-FBF633879C90
+https://data.moi.gov.tw/MoiOD/System/DownloadFile.aspx?DATA=6B69921F-A5C9-46D2-9A56-BBD8604361A7
+https://data.moi.gov.tw/MoiOD/System/DownloadFile.aspx?DATA=0B271D0C-A6B8-44A4-B983-523DF9020F45
+https://data.moi.gov.tw/MoiOD/System/DownloadFile.aspx?DATA=F2361726-A634-47AC-939F-C44A534BB0E6
+https://data.moi.gov.tw/MoiOD/System/DownloadFile.aspx?DATA=E4CD5326-815C-46E1-8555-474437520DD7
+https://data.moi.gov.tw/MoiOD/System/DownloadFile.aspx?DATA=98A3F482-13C0-4E98-ADCA-6DAC4295C20F
+https://data.moi.gov.tw/MoiOD/System/DownloadFile.aspx?DATA=D9A73E05-8D55-456B-A4B1-74BAA9253BE7
+https://data.moi.gov.tw/MoiOD/System/DownloadFile.aspx?DATA=489607A8-1FAB-4D43-AC86-44009B21BA17
+https://data.moi.gov.tw/MoiOD/System/DownloadFile.aspx?DATA=28534FFC-4EE6-43B2-AE7B-D634BA80DB67
+https://data.moi.gov.tw/MoiOD/System/DownloadFile.aspx?DATA=1D7A393D-AD04-4A3B-AD4E-F167310CBD52
+https://data.moi.gov.tw/MoiOD/System/DownloadFile.aspx?DATA=1CCFE6AE-AB99-44D7-B127-5A80012B60F0
+"
+
+
+date="201801"
+
+ls ~/2018_DailyImmigPort &> /dev/null
+[ $? == 0 ] && rm -r ~/2018_DailyImmigPort
+hdfs dfs -ls hive-work/2018_DailyImmigPort &> /dev/null
+[ $? == 0 ] && hdfs dfs -rm -r hive-work/2018_DailyImmigPort
+
+ls ~/2018_DailyImmigPort/{original-data,fix-data} &> /dev/null
+[ $? != 0 ] && mkdir -p ~/2018_DailyImmigPort/{original-data,fix-data}
+
+hdfs dfs -ls hive-work/2018_DailyImmigPort &> /dev/null
+[ $? != 0 ] && hdfs dfs -mkdir hive-work/2018_DailyImmigPort &> /dev/null || hdfs dfs -rm -r hive-work/2018_DailyImmigPort/* &> /dev/null
+
+for list in ${dataset_list}
+do
+wget "${list}" -O ~/2018_DailyImmigPort/${date}_DailyImmigPort.zip > /dev/null 2>&1
+[ $? == 0 ] && echo -e " [${GREEN}●${NC}] ${date}_DailyImmigPort.zip download success." || echo -e " [${RED}●${NC}] ${date}_DailyImmigPort.zip download failed."
+
+original=$(unzip -l ~/2018_DailyImmigPort/${date}_DailyImmigPort.zip | grep "${date}" | tail -n 1 | awk '{ print $4 }')
+fix=$(unzip -l ~/2018_DailyImmigPort/${date}_DailyImmigPort.zip | grep "${date}" | tail -n 1 | awk '{ print $4 }' | sed 's/.csv/_Fix.csv/g')
+unzip ~/2018_DailyImmigPort/${date}_DailyImmigPort.zip ${original} -d ~/2018_DailyImmigPort/original-data/ &> /dev/null
+[ $? == 0 ] && echo -e " [${GREEN}●${NC}] ${date}_DailyImmigPort.zip unzip success." || echo -e " [${RED}●${NC}] ${date}_DailyImmigPort.zip unzip failed."
+
+ls ~/2018_DailyImmigPort/original-data/${original} &> /dev/null
+[ $? == 0 ] && rm ~/2018_DailyImmigPort/${date}_DailyImmigPort.zip
+
+cat ~/2018_DailyImmigPort/original-data/${original} | cut -d ',' -f 1,2,3,4,15 > ~/2018_DailyImmigPort/fix-data/${fix}
+#sed -i 's/日期,入出境總人數_小計,桃園一期,桃園二期,松山機場/Dt,Total_E_and_D,TPE1_E_and_D,TPE2_E_and_D,TSA_E_and_D/g' ~/2018_DailyImmigPort/fix-data/${original}
+sed -i '/日期,入出境總人數_小計,桃園一期,桃園二期,松山機場/d' ~/2019_DailyImmigPort/fix-data/${fix}
+
+hdfs dfs -put ~/2018_DailyImmigPort/fix-data/${fix} hive-work/2018_DailyImmigPort/${fix}
+[ $? == 0 ] && echo -e " [${GREEN}●${NC}] ${fix} put success." || echo -e " [${RED}●${NC}] ${fix} put failed."
+date=$((${date}+1))
+echo "---"
+done
