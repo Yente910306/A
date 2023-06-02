@@ -57,7 +57,7 @@ ls ~/2018_DailyImmigPort/original-data/${original} &> /dev/null
 
 cat ~/2018_DailyImmigPort/original-data/${original} | cut -d ',' -f 1,2,3,4,15 > ~/2018_DailyImmigPort/fix-data/${fix}
 #sed -i 's/日期,入出境總人數_小計,桃園一期,桃園二期,松山機場/Dt,Total_E_and_D,TPE1_E_and_D,TPE2_E_and_D,TSA_E_and_D/g' ~/2018_DailyImmigPort/fix-data/${original}
-sed -i '/日期,入出境總人數_小計,桃園一期,桃園二期,松山機場/d' ~/2019_DailyImmigPort/fix-data/${fix}
+sed -i '/日期,入出境總人數_小計,桃園一期,桃園二期,松山機場/d' ~/2018_DailyImmigPort/fix-data/${fix}
 
 hdfs dfs -put ~/2018_DailyImmigPort/fix-data/${fix} hive-work/2018_DailyImmigPort/${fix}
 [ $? == 0 ] && echo -e " [${GREEN}●${NC}] ${fix} put success." || echo -e " [${RED}●${NC}] ${fix} put failed."
